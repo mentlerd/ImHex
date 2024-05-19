@@ -378,7 +378,7 @@ namespace hex::plugin::builtin {
         /* Open Other */
         ContentRegistry::Interface::addMenuItemSubMenu({ "hex.builtin.menu.file", "hex.builtin.menu.file.open_other"}, ICON_VS_TELESCOPE, 1150, [] {
             for (const auto &unlocalizedProviderName : ContentRegistry::Provider::impl::getEntries()) {
-                if (ImGui::MenuItem(Lang(unlocalizedProviderName)))
+                if (ImSubMenu::MenuItem(Lang(unlocalizedProviderName)))
                     ImHexApi::Provider::createProvider(unlocalizedProviderName);
             }
         }, noRunningTasks);
@@ -575,7 +575,7 @@ namespace hex::plugin::builtin {
 
         ContentRegistry::Interface::addMenuItemSubMenu({ "hex.builtin.menu.workspace", "hex.builtin.menu.workspace.layout" }, ICON_VS_LAYOUT, 1150, [] {
             bool locked = LayoutManager::isLayoutLocked();
-            if (ImGui::MenuItemEx("hex.builtin.menu.workspace.layout.lock"_lang, ICON_VS_LOCK, nullptr, locked, ImHexApi::Provider::isValid())) {
+            if (ImSubMenu::MenuItemEx("hex.builtin.menu.workspace.layout.lock"_lang, ICON_VS_LOCK, nullptr, locked, ImHexApi::Provider::isValid())) {
                 LayoutManager::lockLayout(!locked);
                 ContentRegistry::Settings::write<bool>("hex.builtin.setting.interface", "hex.builtin.setting.interface.layout_locked", !locked);
             }
