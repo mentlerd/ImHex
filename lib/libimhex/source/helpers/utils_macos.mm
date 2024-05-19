@@ -155,6 +155,36 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
+using HexMenuItemActionHandler = std::function<void()>;
+
+@interface HexMenuItem : NSMenuItem {
+    HexMenuItemActionHandler _handler;
+}
+@end
+
+@implementation HexMenuItem
+
+- (id) initWithTitle:(NSString *)title keyEquivalent:(NSString *)keyEquivalent handler:(HexMenuItemActionHandler)handler {
+    self = [super initWithTitle:title action:@selector(menuAction:) keyEquivalent:keyEquivalent];
+    if (self) {
+        self.target = self;
+
+        _handler = std::move(handler);
+    }
+    return self;
+}
+
+- (void) menuAction:(NSMenuItem *)item {
+    if (item != self) {
+        return;
+    }
+    if (_handler) {
+        _handler();
+    }
+}
+
+@end
+
 namespace ImSubMenu {
 
 class NativeMenuBuilder {
@@ -174,17 +204,17 @@ public:
             if (idx != 0) [mainMenu removeItem:item];
         }];
         
-        root = std::make_unique<TreeNode>(TreeNode{
+        _root = std::make_unique<TreeNode>(TreeNode{
             .menu = mainMenu
         });
-        stack.clear();
-        stack.push_back(root.get());
+        _stack.clear();
+        _stack.push_back(_root.get());
         
-        isBuilding = true;
+        _isBuilding = true;
     }
     
     bool BeginMenuEx(const char* label, const char* icon, bool enabled) {
-        if (isBuilding) {
+        if (_isBuilding) {
             Configure(Descend(label), icon, nullptr, false, true);
             
             if (!enabled) {
@@ -198,17 +228,34 @@ public:
     }
     
     bool MenuItemEx(const char* label, const char* icon, const char* shortcut, bool selected, bool enabled) {
-        if (isBuilding) {
-            Configure(Append(label), icon, shortcut, selected, enabled);
+        auto menuItemID = ImGui::GetIDWithSeed(label, nullptr, ImGui::GetItemID());
+        
+        if (_isBuilding) {
+            // When the corresponding menu item is clicked, schedule an action to be delivered
+            auto handler = [this, menuItemID] {
+                printf("Scheduling activation of menu item: %d\n", menuItemID);
+                
+                _activationTarget.emplace(menuItemID);
+            };
+            
+            Configure(Append(label, std::move(handler)), icon, shortcut, selected, enabled);
             return false;
         }
         
-        return ImGui::MenuItemEx(label, icon, shortcut, selected, enabled);
+        bool activated = ImGui::MenuItemEx(label, icon, shortcut, selected, enabled);
+        
+        if (_activationTarget == menuItemID) {
+            _activationTarget.reset();
+            
+            activated = true;
+        }
+        
+        return activated;
     }
     
     void Separator() {
-        if (isBuilding) {
-            stack.back()->Separator();
+        if (_isBuilding) {
+            _stack.back()->Separator();
             return;
         }
         
@@ -216,7 +263,7 @@ public:
     }
     
     void TextUnformatted(const char* text) {
-        if (isBuilding) {
+        if (_isBuilding) {
             Append(text);
             return;
         }
@@ -225,7 +272,7 @@ public:
     }
     
     void EndMenu() {
-        if (isBuilding) {
+        if (_isBuilding) {
             Ascend();
             return;
         }
@@ -234,12 +281,12 @@ public:
     }
     
     void Stop() {
-        isBuilding = false;
+        _isBuilding = false;
     }
     
 private:
     struct TreeNode {
-        NSMenuItem* menuItem = nil;
+        HexMenuItem* menuItem = nil;
         NSMenu* menu = nil;
         
         std::unordered_map<std::string, TreeNode> children;
@@ -258,7 +305,7 @@ private:
             [menu addItem: NSMenuItem.separatorItem];
         }
         
-        NSMenuItem* Append(std::string_view label) {
+        HexMenuItem* Append(std::string_view label, HexMenuItemActionHandler handler = {}) {
             NSString* title = ToObjC(label);
             
             if (title == nil) {
@@ -266,7 +313,10 @@ private:
             }
             
             AllocSubmenu();
-            return [menu addItemWithTitle:title action:@selector(terminate:) keyEquivalent:@""]; // TODO: Dummy selector
+            
+            HexMenuItem* item = [[HexMenuItem alloc] initWithTitle:title keyEquivalent:@"" handler:std::move(handler)];
+            [menu addItem:item];
+            return item;
         }
         
         TreeNode* Descend(const std::string& label) {
@@ -280,19 +330,21 @@ private:
         }
     };
     
-    NSMenuItem* Descend(const std::string& label) {
-        auto* newLevel = stack.back()->Descend(label);
-        stack.push_back(newLevel);
+    HexMenuItem* Descend(const std::string& label) {
+        auto* newLevel = _stack.back()->Descend(label);
+        _stack.push_back(newLevel);
         return newLevel->menuItem;
     }
-    NSMenuItem* Append(const std::string& label) {
-        return stack.back()->Append(label);
-    }
-    void Ascend() {
-        stack.pop_back();
+    
+    HexMenuItem* Append(const std::string& label, HexMenuItemActionHandler handler = {}) {
+        return _stack.back()->Append(label, std::move(handler));
     }
     
-    void Configure(NSMenuItem* item, const char* icon, const char* shortcut, bool selected, bool enabled) {
+    void Ascend() {
+        _stack.pop_back();
+    }
+    
+    void Configure(HexMenuItem* item, const char* icon, const char* shortcut, bool selected, bool enabled) {
         (void) icon;
         
         if (shortcut && shortcut[0]) {
@@ -367,9 +419,14 @@ private:
         [item setEnabled:enabled];
     }
     
-    std::unique_ptr<TreeNode> root;
-    std::deque<TreeNode*> stack;
-    bool isBuilding = false;
+    // Whether we are currently re-building the native OS menu
+    bool _isBuilding = false;
+    
+    std::unique_ptr<TreeNode> _root;
+    std::deque<TreeNode*> _stack;
+    
+    // ID of ImGui element which the menu activation should reach
+    std::optional<ImGuiID> _activationTarget;
 };
 
 NativeMenuBuilder builder;
