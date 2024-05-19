@@ -15,6 +15,11 @@
 #include <romfs/romfs.hpp>
 #include <wolv/utils/guards.hpp>
 
+namespace ImSubMenu {
+    bool BeginMainMenuBar();
+    void EndMainMenuBar();
+}
+
 namespace hex::plugin::builtin {
 
     // Function that draws the provider popup, defiend in the ui_items.cpp file
@@ -349,7 +354,7 @@ namespace hex::plugin::builtin {
                 ON_SCOPE_EXIT { ImGui::PopStyleVar(); };
             #endif
 
-            if (ImGui::BeginMainMenuBar()) {
+            if (ImSubMenu::BeginMainMenuBar()) {
                 ImGui::Dummy({});
 
                 auto window = ImHexApi::System::getMainWindowHandle();
@@ -406,7 +411,7 @@ namespace hex::plugin::builtin {
                     }
                 #endif
                 
-                ImGui::EndMainMenuBar();
+                ImSubMenu::EndMainMenuBar();
             } else {
                 ImGui::PopStyleVar(2);
             }

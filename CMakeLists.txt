@@ -84,3 +84,6 @@ createPackage()
 
 # Accomodate IDEs with FOLDER support
 tweakTargetsForIDESupport()
+
+# TODO: ---------------------------- DO NOT UPSTREAM ME --------------------------
+add_dependencies(main builtin)
