@@ -150,58 +150,19 @@
 
 #include <unordered_map>
 #include <deque>
+#include <charconv>
 
 #include <imgui.h>
 #include <imgui_internal.h>
 
 namespace ImSubMenu {
 
-struct NativeMenuItem {
-    NSMenuItem* nsMenuItem = nil;
-    
-    std::unordered_map<std::string_view, NativeMenuItem> items;
-    
-    explicit NativeMenuItem(NSMenu* parent, const hex::UnlocalizedString& name) {
-        if (name.get() == hex::ContentRegistry::Interface::impl::SeparatorValue) {
-            [parent addItem: NSMenuItem.separatorItem];
-            return;
-        }
-        
-        hex::Lang localizedName(name);
-        NSString* localizedNameStr = [NSString stringWithUTF8String:localizedName.get().c_str()];
-        
-        if (localizedNameStr == nil) {
-            localizedNameStr = @"???";
-        }
-        
-        nsMenuItem = [parent addItemWithTitle:localizedNameStr action:nil keyEquivalent:@""];
+class NativeMenuBuilder {
+    static NSString* ToObjC(std::string_view utf8) {
+        return [[NSString alloc] initWithBytes:utf8.data() length:utf8.size() encoding:NSUTF8StringEncoding];
     }
-    
-    void Create(const hex::ContentRegistry::Interface::impl::MenuItem& item, size_t depth) {
-        if (nsMenuItem == nil) {
-            return;
-        }
-        if (nsMenuItem.submenu == nil) {
-            nsMenuItem.submenu = [[NSMenu alloc] initWithTitle:nsMenuItem.title];
-        }
-        
-        const auto& name = item.unlocalizedNames[depth];
-        
-        auto [it, added] = items.try_emplace(name, nsMenuItem.submenu, name);
-        
-        if (depth == item.unlocalizedNames.size() - 1) {
-            it->second.Create(item, depth + 1);
-            return;
-        }
-    }
-};
 
-struct NativeMenuBuilder {
-    std::unordered_map<std::string_view, NativeMenuItem> mainItems;
-    std::deque<NativeMenuItem*> stack;
-
-    bool isBuilding = false;
-    
+public:
     void Start() {
         auto mainMenu = NSApplication.sharedApplication.mainMenu;
         if (!mainMenu) {
@@ -212,24 +173,203 @@ struct NativeMenuBuilder {
         [mainMenu.itemArray enumerateObjectsUsingBlock:^(NSMenuItem* item, NSUInteger idx, BOOL*) {
             if (idx != 0) [mainMenu removeItem:item];
         }];
-
-        // Build our own object structure to make menu building more intuitive
-        for (const auto& [_, hexMainMenuItem] : hex::ContentRegistry::Interface::impl::getMainMenuItems()) {
-            struct NativeMenuItem mainMenuItem(mainMenu, hexMainMenuItem.unlocalizedName);
+        
+        root = std::make_unique<TreeNode>(TreeNode{
+            .menu = mainMenu
+        });
+        stack.clear();
+        stack.push_back(root.get());
+        
+        isBuilding = true;
+    }
+    
+    bool BeginMenuEx(const char* label, const char* icon, bool enabled) {
+        if (isBuilding) {
+            Configure(Descend(label), icon, nullptr, false, true);
             
-            for (const auto& [_, hexMenuItem] : hex::ContentRegistry::Interface::impl::getMenuItems()) {
-                if (hexMenuItem.unlocalizedNames.front() != hexMainMenuItem.unlocalizedName) {
-                    continue;
-                }
-             
-                mainMenuItem.Create(hexMenuItem, 1);
+            if (!enabled) {
+                Ascend();
+                return false;
             }
+            return true;
         }
+        
+        return ImGui::BeginMenuEx(label, icon, enabled);
+    }
+    
+    bool MenuItemEx(const char* label, const char* icon, const char* shortcut, bool selected, bool enabled) {
+        if (isBuilding) {
+            Configure(Append(label), icon, shortcut, selected, enabled);
+            return false;
+        }
+        
+        return ImGui::MenuItemEx(label, icon, shortcut, selected, enabled);
+    }
+    
+    void Separator() {
+        if (isBuilding) {
+            stack.back()->Separator();
+            return;
+        }
+        
+        ImGui::Separator();
+    }
+    
+    void TextUnformatted(const char* text) {
+        if (isBuilding) {
+            Append(text);
+            return;
+        }
+        
+        ImGui::TextUnformatted(text);
+    }
+    
+    void EndMenu() {
+        if (isBuilding) {
+            Ascend();
+            return;
+        }
+        
+        ImGui::EndMenu();
     }
     
     void Stop() {
         isBuilding = false;
     }
+    
+private:
+    struct TreeNode {
+        NSMenuItem* menuItem = nil;
+        NSMenu* menu = nil;
+        
+        std::unordered_map<std::string, TreeNode> children;
+        
+        void AllocSubmenu() {
+            if (menu != nil) {
+                return;
+            }
+            
+            menu = [[NSMenu alloc] initWithTitle: menuItem.title];
+            [menuItem.menu setSubmenu:menu forItem:menuItem];
+        }
+
+        void Separator() {
+            AllocSubmenu();
+            [menu addItem: NSMenuItem.separatorItem];
+        }
+        
+        NSMenuItem* Append(std::string_view label) {
+            NSString* title = ToObjC(label);
+            
+            if (title == nil) {
+                title = @"<nil>";
+            }
+            
+            AllocSubmenu();
+            return [menu addItemWithTitle:title action:@selector(terminate:) keyEquivalent:@""]; // TODO: Dummy selector
+        }
+        
+        TreeNode* Descend(const std::string& label) {
+            auto [it, added] = children.try_emplace(label);
+            
+            if (added) {
+                it->second.menuItem = Append(label);
+            }
+            
+            return &it->second;
+        }
+    };
+    
+    NSMenuItem* Descend(const std::string& label) {
+        auto* newLevel = stack.back()->Descend(label);
+        stack.push_back(newLevel);
+        return newLevel->menuItem;
+    }
+    NSMenuItem* Append(const std::string& label) {
+        return stack.back()->Append(label);
+    }
+    void Ascend() {
+        stack.pop_back();
+    }
+    
+    void Configure(NSMenuItem* item, const char* icon, const char* shortcut, bool selected, bool enabled) {
+        (void) icon;
+        
+        if (shortcut && shortcut[0]) {
+            std::string_view stream(shortcut);
+            
+            // Parse ImGui shortcut string to OS representation
+            NSEventModifierFlags keyEquivalentModifierFlags = 0;
+            NSString* keyEquivalent = nil;
+            
+            auto consume = [&](std::string_view prefix) {
+                if (!stream.starts_with(prefix)) {
+                    return false;
+                }
+                stream = stream.substr(prefix.size());
+                return true;
+            };
+
+            // Consume various keywords and translate them to their equivalent modifier flags
+            while (true) {
+                if (consume("CAPS + ")) {
+                    keyEquivalentModifierFlags |= NSEventModifierFlagCapsLock;
+                } else if (consume("SHIFT + ")) {
+                    keyEquivalentModifierFlags |= NSEventModifierFlagShift;
+                } else if (consume("CONTROL + ")) {
+                    keyEquivalentModifierFlags |= NSEventModifierFlagControl;
+                } else if (consume("OPT + ")) {
+                    keyEquivalentModifierFlags |= NSEventModifierFlagOption;
+                } else if (consume("CMD + ")) {
+                    keyEquivalentModifierFlags |= NSEventModifierFlagCommand;
+                } else if (consume("NUMPAD + ")) {
+                    keyEquivalentModifierFlags |= NSEventModifierFlagNumericPad;
+                } else if (consume("HELP + ")) {
+                    keyEquivalentModifierFlags |= NSEventModifierFlagHelp;
+                } else if (consume("FN + ")) {
+                    keyEquivalentModifierFlags |= NSEventModifierFlagFunction;
+                } else {
+                    break;
+                }
+            }
+
+            // If a single character remains we assume it is printable
+            if (stream.size() == 1) {
+                keyEquivalent = ToObjC(stream);
+            }
+            
+            // This could be a function row button
+            if (keyEquivalent == nil && stream.starts_with("F")) {
+                u8 integer;
+                
+                if (std::from_chars(stream.begin() + 1, stream.end(), integer).ec == std::errc{}) {
+                    unichar keyCode = NSF1FunctionKey + integer - 1;
+                    
+                    if (NSF1FunctionKey <= keyCode && keyCode <= NSF35FunctionKey) {
+                        keyEquivalent = [NSString stringWithFormat:@"%C", keyCode];
+                    }
+                }
+            }
+            
+            // Assign parsed description to the item, but show the original string as a badge
+            // in case failed to make sense of it - this way wacky translations are still shown
+            if (keyEquivalent != nil) {
+                [item setKeyEquivalentModifierMask:keyEquivalentModifierFlags];
+                [item setKeyEquivalent:keyEquivalent];
+            } else {
+                [item setBadge: [[NSMenuItemBadge alloc] initWithString:ToObjC(shortcut)]];
+            }
+        }
+        if (selected) {
+            [item setState:NSControlStateValueOn];
+        }
+
+        [item setEnabled:enabled];
+    }
+    
+    std::unique_ptr<TreeNode> root;
+    std::deque<TreeNode*> stack;
+    bool isBuilding = false;
 };
 
 NativeMenuBuilder builder;
@@ -237,44 +377,50 @@ NativeMenuBuilder builder;
 bool BeginMainMenuBar() {
     static u64 frameCounter = 0;
     
-    if (++frameCounter % 30 == 0) {
-        builder.Start();
-        builder.Stop();
+    if (ImGui::Begin("Debug")) {
+        ImGui::Text("Frame: %llu", ++frameCounter);
+        
+        if (frameCounter % 600 == 30) {
+            ImGui::Text("Capturing!");
+            builder.Start();
+        }
+        
+        ImGui::End();
     }
     
     return ImGui::BeginMainMenuBar();
 }
 
 void Separator() {
-    ImGui::Separator();
+    builder.Separator();
 }
 
-bool BeginMenu(const char* title, bool enabled) {
-    return ImGui::BeginMenu(title, enabled);
+bool BeginMenu(const char* label, bool enabled) {
+    return builder.BeginMenuEx(label, nullptr, enabled);
 }
 
 bool BeginMenuEx(const char* label, const char* icon, bool enabled) {
-    return ImGui::BeginMenuEx(label, icon, enabled);
+    return builder.BeginMenuEx(label, icon, enabled);
 }
 
 void EndMenu() {
-    ImGui::EndMenu();
+    builder.EndMenu();
 }
 
-bool MenuItem(const char* title, const char* shortcut, bool selected, bool enabled) {
-    return ImGui::MenuItem(title, shortcut, selected, enabled);
+bool MenuItem(const char* label, const char* shortcut, bool selected, bool enabled) {
+    return builder.MenuItemEx(label, nullptr, shortcut, selected, enabled);
 }
 
-bool MenuItemEx(const char* title, const char* icon, const char* shortcut, bool selected, bool enabled) {
-    return ImGui::MenuItemEx(title, icon, shortcut, selected, enabled);
+bool MenuItemEx(const char* label, const char* icon, const char* shortcut, bool selected, bool enabled) {
+    return builder.MenuItemEx(label, icon, shortcut, selected, enabled);
 }
 
-void TextSpinner(const char* title) {
-    ImGui::TextUnformatted("%s <spinner>", title); // TODO!
+void TextSpinner(const char* text) {
+    builder.TextUnformatted(text); // TODO!
 }
 
 void TextUnformatted(const char* title) {
-    ImGui::TextUnformatted(title);
+    builder.TextUnformatted(title);
 }
 
 bool IsShiftPressed() {
@@ -282,6 +428,8 @@ bool IsShiftPressed() {
 }
 
 void EndMainMenuBar() {
+    builder.Stop();
+    
     ImGui::EndMainMenuBar();
 }
 

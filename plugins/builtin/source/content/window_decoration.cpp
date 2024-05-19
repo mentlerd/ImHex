@@ -36,21 +36,21 @@ namespace hex::plugin::builtin {
             const auto &name = menuItems.front();
 
             if (name.get() == ContentRegistry::Interface::impl::SeparatorValue) {
-                ImGui::Separator();
+                ImSubMenu::Separator();
                 return;
             }
 
             if (name.get() == ContentRegistry::Interface::impl::SubMenuValue) {
                 callback();
             } else if (menuItems.size() == 1) {
-                if (ImGui::MenuItemEx(Lang(name), icon, shortcut.toString().c_str(), selectedCallback(), enabledCallback()))
+                if (ImSubMenu::MenuItemEx(Lang(name), icon, shortcut.toString().c_str(), selectedCallback(), enabledCallback()))
                     callback();
             } else {
                 bool isSubmenu = (menuItems.begin() + 1)->get() == ContentRegistry::Interface::impl::SubMenuValue;
 
-                if (ImGui::BeginMenuEx(Lang(name), std::next(menuItems.begin())->get() == ContentRegistry::Interface::impl::SubMenuValue ? icon : nullptr, isSubmenu ? enabledCallback() : true)) {
+                if (ImSubMenu::BeginMenuEx(Lang(name), std::next(menuItems.begin())->get() == ContentRegistry::Interface::impl::SubMenuValue ? icon : nullptr, isSubmenu ? enabledCallback() : true)) {
                     createNestedMenu({ std::next(menuItems.begin()), menuItems.end() }, icon, shortcut, callback, enabledCallback, selectedCallback);
-                    ImGui::EndMenu();
+                    ImSubMenu::EndMenu();
                 }
             }
         }
@@ -280,8 +280,8 @@ namespace hex::plugin::builtin {
 
         void defineMenu(const UnlocalizedString &menuName) {
             ImGui::GetStyle().TouchExtraPadding = scaled(ImVec2(0, 2));
-            if (ImGui::BeginMenu(Lang(menuName))) {
-                ImGui::EndMenu();
+            if (ImSubMenu::BeginMenu(Lang(menuName))) {
+                ImSubMenu::EndMenu();
             }
             ImGui::GetStyle().TouchExtraPadding = ImVec2(0, 0);
 
