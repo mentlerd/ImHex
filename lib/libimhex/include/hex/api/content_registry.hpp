@@ -1383,3 +1383,34 @@ namespace hex {
     }
 
 }
+
+namespace ImSubMenu {
+
+void Separator();
+
+bool BeginMenu(const char* title,
+               bool enabled = true);
+
+bool BeginMenuEx(const char* label,
+                 const char* icon,
+                 bool enabled = true);
+
+void EndMenu();
+
+bool MenuItem(const char* title,
+              const char* shortcut = nullptr,
+              bool selected = true,
+              bool enabled = true);
+
+bool MenuItemEx(const char* title,
+                const char* icon,
+                const char* shortcut = nullptr,
+                bool selected = true,
+                bool enabled = true);
+
+void TextSpinner(const char* title);
+void TextUnformatted(const char* title);
+
+bool IsShiftPressed();
+
+}

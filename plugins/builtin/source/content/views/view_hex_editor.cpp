@@ -1282,15 +1282,15 @@ namespace hex::plugin::builtin {
                                                         return (value >= provider->getBaseAddress()) && (value < (provider->getBaseAddress() + provider->getActualSize()));
                                                     };
 
-                                                    if (ImGui::MenuItem(hex::format("0x{:08X}", littleEndianValue).c_str(), "hex.ui.common.little_endian"_lang, false, canJumpTo(littleEndianValue))) {
+                                                    if (ImSubMenu::MenuItem(hex::format("0x{:08X}", littleEndianValue).c_str(), "hex.ui.common.little_endian"_lang, false, canJumpTo(littleEndianValue))) {
                                                         ImHexApi::HexEditor::setSelection(littleEndianValue, 1);
                                                     }
 
-                                                    if (ImGui::MenuItem(hex::format("0x{:08X}", bigEndianValue).c_str(), "hex.ui.common.big_endian"_lang, false, canJumpTo(bigEndianValue))) {
+                                                    if (ImSubMenu::MenuItem(hex::format("0x{:08X}", bigEndianValue).c_str(), "hex.ui.common.big_endian"_lang, false, canJumpTo(bigEndianValue))) {
                                                         ImHexApi::HexEditor::setSelection(bigEndianValue, 1);
                                                     }
 
-                                                    if (ImGui::MenuItem("hex.builtin.view.hex_editor.menu.edit.jump_to.curr_pattern"_lang, "", false, selection.has_value() && ContentRegistry::PatternLanguage::getRuntime().getCreatedPatternCount() > 0)) {
+                                                    if (ImSubMenu::MenuItem("hex.builtin.view.hex_editor.menu.edit.jump_to.curr_pattern"_lang, "", false, selection.has_value() && ContentRegistry::PatternLanguage::getRuntime().getCreatedPatternCount() > 0)) {
                                                         auto patterns = ContentRegistry::PatternLanguage::getRuntime().getPatternsAtAddress(selection->getStartAddress());
 
                                                         if (!patterns.empty())

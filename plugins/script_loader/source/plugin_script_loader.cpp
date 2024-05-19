@@ -89,7 +89,7 @@ namespace {
         hex::ContentRegistry::Interface::addMenuItemSubMenu({ "hex.builtin.menu.extras" }, 5000, [] {
             static bool menuJustOpened = true;
 
-            if (ImGui::BeginMenuEx("hex.script_loader.menu.run_script"_lang, ICON_VS_LIBRARY)) {
+            if (ImSubMenu::BeginMenuEx("hex.script_loader.menu.run_script"_lang, ICON_VS_LIBRARY)) {
                 if (menuJustOpened) {
                     menuJustOpened = false;
                     if (!updaterTask.isRunning()) {
@@ -100,9 +100,9 @@ namespace {
                 }
 
                 if (updaterTask.isRunning()) {
-                    ImGuiExt::TextSpinner("hex.script_loader.menu.loading"_lang);
+                    ImSubMenu::TextSpinner("hex.script_loader.menu.loading"_lang);
                 } else if (scripts.empty()) {
-                    ImGui::TextUnformatted("hex.script_loader.menu.no_scripts"_lang);
+                    ImSubMenu::TextUnformatted("hex.script_loader.menu.no_scripts"_lang);
                 }
 
                 for (const auto &script : scripts) {
@@ -110,14 +110,14 @@ namespace {
                     if (background)
                         continue;
 
-                    if (ImGui::MenuItem(name.c_str(), loader->getTypeName().c_str())) {
+                    if (ImSubMenu::MenuItem(name.c_str(), loader->getTypeName().c_str())) {
                         runnerTask = TaskManager::createTask("Running script...", TaskManager::NoProgress, [entryPoint](auto&) {
                             entryPoint();
                         });
                     }
                 }
 
-                ImGui::EndMenu();
+                ImSubMenu::EndMenu();
             } else {
                 menuJustOpened = true;
             }

@@ -338,17 +338,17 @@ namespace hex::plugin::builtin::recent {
 
     void addMenuItems() {
         ContentRegistry::Interface::addMenuItemSubMenu({ "hex.builtin.menu.file" }, 1200, [] {
-            if (ImGui::BeginMenuEx("hex.builtin.menu.file.open_recent"_lang, ICON_VS_ARCHIVE, !recent::s_recentEntriesUpdating && !s_recentEntries.empty())) {
+            if (ImSubMenu::BeginMenuEx("hex.builtin.menu.file.open_recent"_lang, ICON_VS_ARCHIVE, !recent::s_recentEntriesUpdating && !s_recentEntries.empty())) {
                 // Copy to avoid changing list while iteration
                 auto recentEntries = s_recentEntries;
                 for (auto &recentEntry : recentEntries) {
-                    if (ImGui::MenuItem(recentEntry.displayName.c_str())) {
+                    if (ImSubMenu::MenuItem(recentEntry.displayName.c_str())) {
                         loadRecentEntry(recentEntry);
                     }
                 }
 
-                ImGui::Separator();
-                if (ImGui::MenuItem("hex.builtin.menu.file.clear_recent"_lang)) {
+                ImSubMenu::Separator();
+                if (ImSubMenu::MenuItem("hex.builtin.menu.file.clear_recent"_lang)) {
                     s_recentEntries.clear();
 
                     // Remove all recent files
@@ -358,7 +358,7 @@ namespace hex::plugin::builtin::recent {
                     }
                 }
 
-                ImGui::EndMenu();
+                ImSubMenu::EndMenu();
             }
         });
     }

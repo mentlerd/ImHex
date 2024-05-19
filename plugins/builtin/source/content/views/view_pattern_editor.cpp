@@ -1733,12 +1733,12 @@ namespace hex::plugin::builtin {
             return;
 
         if (menus.size() == 1) {
-            if (ImGui::MenuItem(menus.front().c_str()))
+            if (ImSubMenu::MenuItem(menus.front().c_str()))
                 function();
         } else {
-            if (ImGui::BeginMenu(menus.front().c_str())) {
+            if (ImSubMenu::BeginMenu(menus.front().c_str())) {
                 createNestedMenu({ menus.begin() + 1, menus.end() }, function);
-                ImGui::EndMenu();
+                ImSubMenu::EndMenu();
             }
         }
     }
@@ -1784,30 +1784,30 @@ namespace hex::plugin::builtin {
         /* Place pattern... */
         ContentRegistry::Interface::addMenuItemSubMenu({ "hex.builtin.menu.edit", "hex.builtin.view.pattern_editor.menu.edit.place_pattern" }, ICON_VS_LIBRARY, 3000,
             [&, this] {
-                if (ImGui::BeginMenu("hex.builtin.view.pattern_editor.menu.edit.place_pattern.builtin"_lang)) {
-                    if (ImGui::BeginMenu("hex.builtin.view.pattern_editor.menu.edit.place_pattern.builtin.single"_lang)) {
+                if (ImSubMenu::BeginMenu("hex.builtin.view.pattern_editor.menu.edit.place_pattern.builtin"_lang)) {
+                    if (ImSubMenu::BeginMenu("hex.builtin.view.pattern_editor.menu.edit.place_pattern.builtin.single"_lang)) {
                         for (const auto &[type, size] : Types) {
-                            if (ImGui::MenuItem(type))
+                            if (ImSubMenu::MenuItem(type))
                                 appendVariable(type);
                         }
-                        ImGui::EndMenu();
+                        ImSubMenu::EndMenu();
                     }
 
-                    if (ImGui::BeginMenu("hex.builtin.view.pattern_editor.menu.edit.place_pattern.builtin.array"_lang)) {
+                    if (ImSubMenu::BeginMenu("hex.builtin.view.pattern_editor.menu.edit.place_pattern.builtin.array"_lang)) {
                         for (const auto &[type, size] : Types) {
-                            if (ImGui::MenuItem(type))
+                            if (ImSubMenu::MenuItem(type))
                                 appendArray(type, size);
                         }
-                        ImGui::EndMenu();
+                        ImSubMenu::EndMenu();
                     }
 
-                    ImGui::EndMenu();
+                    ImSubMenu::EndMenu();
                 }
 
                 const auto &types = m_editorRuntime->getInternals().parser->getTypes();
                 const bool hasPlaceableTypes = std::ranges::any_of(types, [](const auto &type) { return !type.second->isTemplateType(); });
 
-                if (ImGui::BeginMenu("hex.builtin.view.pattern_editor.menu.edit.place_pattern.custom"_lang, hasPlaceableTypes)) {
+                if (ImSubMenu::BeginMenu("hex.builtin.view.pattern_editor.menu.edit.place_pattern.custom"_lang, hasPlaceableTypes)) {
                     const auto &selection = ImHexApi::HexEditor::getSelection();
 
                     for (const auto &[typeName, type] : types) {
@@ -1824,7 +1824,7 @@ namespace hex::plugin::builtin {
                         });
                     }
 
-                    ImGui::EndMenu();
+                    ImSubMenu::EndMenu();
                 }
             }, [this] {
                 return ImHexApi::Provider::isValid() && ImHexApi::HexEditor::isSelectionValid() && m_runningParsers == 0;

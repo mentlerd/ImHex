@@ -554,7 +554,7 @@ namespace hex::plugin::builtin {
                 if (view->hasViewMenuItemEntry()) {
                     auto &state = view->getWindowOpenState();
 
-                    if (ImGui::MenuItemEx(Lang(view->getUnlocalizedName()), view->getIcon(), "", state, ImHexApi::Provider::isValid() && !LayoutManager::isLayoutLocked()))
+                    if (ImSubMenu::MenuItemEx(Lang(view->getUnlocalizedName()), view->getIcon(), "", state, ImHexApi::Provider::isValid() && !LayoutManager::isLayoutLocked()))
                         state = !state;
                 }
             }
@@ -585,14 +585,14 @@ namespace hex::plugin::builtin {
 
         ContentRegistry::Interface::addMenuItemSubMenu({ "hex.builtin.menu.workspace", "hex.builtin.menu.workspace.layout" }, 2000, [] {
             for (const auto &path : romfs::list("layouts")) {
-                if (ImGui::MenuItem(wolv::util::capitalizeString(path.stem().string()).c_str(), "", false, ImHexApi::Provider::isValid())) {
+                if (ImSubMenu::MenuItem(wolv::util::capitalizeString(path.stem().string()).c_str(), "", false, ImHexApi::Provider::isValid())) {
                     LayoutManager::loadFromString(std::string(romfs::get(path).string()));
                 }
             }
 
-            bool shiftPressed = ImGui::GetIO().KeyShift;
+            bool shiftPressed = ImSubMenu::IsShiftPressed();
             for (auto &[name, path] : LayoutManager::getLayouts()) {
-                if (ImGui::MenuItem(hex::format("{}{}", name, shiftPressed ? " " ICON_VS_X : "").c_str(), "", false, ImHexApi::Provider::isValid())) {
+                if (ImSubMenu::MenuItem(hex::format("{}{}", name, shiftPressed ? " " ICON_VS_X : "").c_str(), "", false, ImHexApi::Provider::isValid())) {
                     if (shiftPressed) {
                         LayoutManager::removeLayout(name);
                         break;
@@ -620,12 +620,12 @@ namespace hex::plugin::builtin {
         ContentRegistry::Interface::addMenuItemSubMenu({ "hex.builtin.menu.workspace" }, 3200, [] {
             const auto &workspaces = WorkspaceManager::getWorkspaces();
 
-            bool shiftPressed = ImGui::GetIO().KeyShift;
+            bool shiftPressed = ImSubMenu::IsShiftPressed();
             for (auto it = workspaces.begin(); it != workspaces.end(); ++it) {
                 const auto &[name, workspace] = *it;
 
                 bool canRemove = shiftPressed && !workspace.builtin;
-                if (ImGui::MenuItem(hex::format("{}{}", name, canRemove ? " " ICON_VS_X : "").c_str(), "", it == WorkspaceManager::getCurrentWorkspace(), ImHexApi::Provider::isValid())) {
+                if (ImSubMenu::MenuItem(hex::format("{}{}", name, canRemove ? " " ICON_VS_X : "").c_str(), "", it == WorkspaceManager::getCurrentWorkspace(), ImHexApi::Provider::isValid())) {
                     if (canRemove) {
                         WorkspaceManager::removeWorkspace(name);
                         break;
