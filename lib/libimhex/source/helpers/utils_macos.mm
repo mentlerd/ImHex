@@ -264,23 +264,25 @@ namespace ImSubMenu {
 
 class NativeMenuBuilder {
 public:
-    void Start() {
+    void Start(bool clear) {
         auto mainMenu = NSApplication.sharedApplication.mainMenu;
         if (!mainMenu) {
             return;
         }
         
-        // Remove all elements except the native menu
-        [mainMenu.itemArray enumerateObjectsUsingBlock:^(NSMenuItem* item, NSUInteger idx, BOOL*) {
-            if (idx != 0) [mainMenu removeItem:item];
-        }];
-        
-        _root = std::make_unique<HexMenuNode>(HexMenuNode{
-            .menu = mainMenu
-        });
-        _current = _root.get();
+        if (clear) {
+            [mainMenu.itemArray enumerateObjectsUsingBlock:^(NSMenuItem* item, NSUInteger idx, BOOL*) {
+                if (idx != 0) [mainMenu removeItem:item];
+            }];
+            
+            _root = std::make_unique<HexMenuNode>(HexMenuNode{
+                .menu = mainMenu
+            });
 
-        _isBuilding = true;
+            _isBuilding = true;
+        }
+        
+        _current = _root.get();
     }
     
     bool BeginMenuEx(const char* label, const char* icon, bool enabled) {
@@ -303,7 +305,10 @@ public:
             _current = node;
             return true;
         }
-
+        if (_suppressRendering) {
+            return false;
+        }
+        
         return ImGui::BeginMenuEx(label, icon, enabled);
     }
     
@@ -322,6 +327,9 @@ public:
             
             return false;
         }
+        if (_suppressRendering) {
+            return false;
+        }
         
         return ImGui::MenuItemEx(label, icon, shortcut, selected, enabled);
     }
@@ -329,6 +337,9 @@ public:
     void Separator() {
         if (_current && _isBuilding) {
             _current->Separator();
+            return;
+        }
+        if (_suppressRendering) {
             return;
         }
         
@@ -340,6 +351,9 @@ public:
             _current->Descend(_isBuilding, text);
             return;
         }
+        if (_suppressRendering) {
+            return;
+        }
         
         ImGui::TextUnformatted(text);
     }
@@ -347,6 +361,9 @@ public:
     void EndMenu() {
         if (_current && (_isBuilding || _current->activated)) {
             _current = _current->Ascend();
+            return;
+        }
+        if (_suppressRendering) {
             return;
         }
         
@@ -441,6 +458,8 @@ private:
     // Whether we are currently re-building the native OS menu
     bool _isBuilding = false;
     
+    bool _suppressRendering = true;
+    
     std::unique_ptr<HexMenuNode> _root;
     HexMenuNode* _current = nullptr;
 };
@@ -449,18 +468,9 @@ NativeMenuBuilder builder;
 
 bool BeginMainMenuBar() {
     static u64 frameCounter = 0;
-    
-    if (ImGui::Begin("Debug")) {
-        ImGui::Text("Frame: %llu", ++frameCounter);
-        
-        if (frameCounter % 600 == 30) {
-            ImGui::Text("Capturing!");
-            builder.Start();
-        }
-        
-        ImGui::End();
-    }
-    
+
+    builder.Start(++frameCounter % 120 == 0);
+
     return ImGui::BeginMainMenuBar();
 }
 
