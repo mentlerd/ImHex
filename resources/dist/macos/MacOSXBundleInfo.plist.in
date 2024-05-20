@@ -36,11 +36,6 @@
 		<key>NSHumanReadableCopyright</key>
 		<string>${IMHEX_COPYRIGHT}</string>
 
-	<!-- Core settings / User Interface / Icons -->
-
-		<key>CFBundleIconFile</key>
-		<string>AppIcon.icns</string>
-
 	<!-- Core settings / Localization -->
 
 		<key>CFBundleDevelopmentRegion</key>

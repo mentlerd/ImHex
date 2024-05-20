@@ -117,7 +117,7 @@ macro(configurePackingResources)
             set(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_SOURCE_DIR}/resources/dist/windows/LICENSE.rtf")
         endif()
     elseif (APPLE OR ${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
-        set(IMHEX_ICON "${IMHEX_BASE_FOLDER}/resources/dist/macos/AppIcon.icns")
+        #set(IMHEX_ICON "${IMHEX_BASE_FOLDER}/resources/dist/macos/AppIcon.icns")
         set(BUNDLE_NAME "imhex.app")
 
         if (IMHEX_GENERATE_PACKAGE)
@@ -291,6 +291,21 @@ macro(createPackage)
                 MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/resources/dist/macos/MacOSXBundleInfo.plist.in"
             )
 
+            # Remove upstream AppIcon
+            set_source_files_properties("${IMHEX_ICON}" TARGET_DIRECTORY main PROPERTIES HEADER_FILE_ONLY ON)
+
+            # Add fork AppIcons
+            target_sources(main PRIVATE "${CMAKE_SOURCE_DIR}/resources/dist/macos/Assets.xcassets")
+            set_source_files_properties("${CMAKE_SOURCE_DIR}/resources/dist/macos/Assets.xcassets" TARGET_DIRECTORY main PROPERTIES 
+                MACOSX_PACKAGE_LOCATION "Resources"
+            )
+            set_target_properties(main PROPERTIES 
+                XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon-Release"
+                XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME[variant=Debug] "AppIcon-Debug"
+
+                XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS "NO"
+            )
+
             # Embed plugins
             set_target_properties(main PROPERTIES 
                 XCODE_EMBED_APP_EXTENSIONS "${PLUGINS}"
@@ -315,6 +330,7 @@ macro(createPackage)
             if (IMHEX_ENABLE_SANDBOXING_XCODE)
                 set_target_properties(main PROPERTIES
                     XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "net.WerWolv.ImHex"
+                    XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER[variant=Debug] "net.WerWolv.ImHex.debug"
 
                     XCODE_ATTRIBUTE_ENABLE_APP_SANDBOX "YES"
                     XCODE_ATTRIBUTE_ENABLE_HARDENED_RUNTIME "YES"
