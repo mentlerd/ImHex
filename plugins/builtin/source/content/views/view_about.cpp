@@ -607,6 +607,15 @@ namespace hex::plugin::builtin {
             std::string author;
             std::string date;
             std::string url;
+            
+            Commit(decltype(hash) hash, decltype(message) message, decltype(description) description, decltype(author) author, decltype(date) date, decltype(url) url)
+            : hash(std::move(hash))
+            , message(std::move(message))
+            , description(std::move(description))
+            , author(std::move(author))
+            , date(std::move(date))
+            , url(std::move(url))
+            {}
         };
 
         static std::vector<Commit> commits;
@@ -662,6 +671,7 @@ namespace hex::plugin::builtin {
                             e.what(),
                             "",
                             "",
+                            "",
                             ""
                         );
                     }
@@ -670,6 +680,7 @@ namespace hex::plugin::builtin {
                     commits.emplace_back(
                         "hex.ui.common.error"_lang,
                         "HTTP " + std::to_string(response.getStatusCode()),
+                        "",
                         "",
                         "",
                         ""

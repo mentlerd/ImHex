@@ -272,17 +272,29 @@ namespace hex {
                 struct Entry {
                     UnlocalizedString unlocalizedName;
                     std::unique_ptr<Widgets::Widget> widget;
+                    
+                    explicit Entry(decltype(unlocalizedName) unlocalizedName)
+                    : unlocalizedName(std::move(unlocalizedName))
+                    {}
                 };
 
                 struct SubCategory {
                     UnlocalizedString unlocalizedName;
                     std::vector<Entry> entries;
+
+                    explicit SubCategory(decltype(unlocalizedName) unlocalizedName)
+                    : unlocalizedName(std::move(unlocalizedName))
+                    {}
                 };
 
                 struct Category {
                     UnlocalizedString unlocalizedName;
                     UnlocalizedString unlocalizedDescription;
                     std::vector<SubCategory> subCategories;
+                    
+                    explicit Category(decltype(unlocalizedName) unlocalizedName)
+                    : unlocalizedName(std::move(unlocalizedName))
+                    {}
                 };
 
                 void load();
@@ -1061,6 +1073,11 @@ namespace hex {
 
                 UnlocalizedString unlocalizedName;
                 Callback callback;
+                
+                MiniMapVisualizer(decltype(unlocalizedName) unlocalizedName, decltype(callback) callback)
+                : unlocalizedName(std::move(unlocalizedName))
+                , callback(std::move(callback))
+                {}
             };
 
             namespace impl {

@@ -21,6 +21,12 @@ namespace hex::init {
         std::string name;
         std::function<bool()> callback;
         bool async;
+        
+        Task(decltype(name) name, decltype(callback) callback, decltype(async) async)
+        : name(std::move(name))
+        , callback(std::move(callback))
+        , async(std::move(async))
+        {}
     };
 
     enum FrameResult{ Success, Failure, Running };

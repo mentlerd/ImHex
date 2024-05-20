@@ -221,7 +221,7 @@ namespace hex {
         }
 
         void setSelection(const Region &region, prv::Provider *provider) {
-            setSelection(ProviderRegion { region, provider == nullptr ? Provider::get() : provider });
+            setSelection(ProviderRegion(region, provider == nullptr ? Provider::get() : provider));
         }
 
         void setSelection(const ProviderRegion &region) {
@@ -229,7 +229,7 @@ namespace hex {
         }
 
         void setSelection(u64 address, size_t size, prv::Provider *provider) {
-            setSelection({ { address, size }, provider == nullptr ? Provider::get() : provider });
+            setSelection(ProviderRegion(Region(address, size), provider == nullptr ? Provider::get() : provider));
         }
 
         void addVirtualFile(const std::fs::path &path, std::vector<u8> data, Region region) {

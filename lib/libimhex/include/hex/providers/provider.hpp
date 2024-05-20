@@ -26,6 +26,11 @@ namespace hex::prv {
         struct Description {
             std::string name;
             std::string value;
+            
+            Description(decltype(name) name, decltype(value) value)
+            : name(std::move(name))
+            , value(std::move(value))
+            {}
         };
 
         struct MenuEntry {

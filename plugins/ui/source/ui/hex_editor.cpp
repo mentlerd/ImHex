@@ -113,6 +113,12 @@ namespace hex::ui {
         std::string displayValue;
         size_t advance;
         ImColor color;
+        
+        CustomEncodingData(decltype(displayValue) displayValue, decltype(advance) advance, decltype(color) color)
+        : displayValue(std::move(displayValue))
+        , advance(std::move(advance))
+        , color(std::move(color))
+        {}
     };
 
     static CustomEncodingData queryCustomEncodingData(prv::Provider *provider, const EncodingFile &encodingFile, u64 address) {

@@ -45,7 +45,7 @@ namespace hex {
                 [[nodiscard]] const color_t& getColor() const { return m_color; }
 
             private:
-                Region m_region = {};
+                Region m_region;
                 color_t m_color = 0x00;
             };
 
@@ -59,7 +59,7 @@ namespace hex {
                 [[nodiscard]] const std::string& getValue() const { return m_value; }
 
             private:
-                Region m_region = {};
+                Region m_region;
                 std::string m_value;
                 color_t m_color = 0x00;
             };
@@ -67,6 +67,11 @@ namespace hex {
             struct ProviderRegion : Region {
                 prv::Provider *provider;
 
+                ProviderRegion(Region region, prv::Provider* provider)
+                : Region(region)
+                , provider(provider)
+                {}
+                
                 [[nodiscard]] prv::Provider *getProvider() const { return this->provider; }
 
                 [[nodiscard]] Region getRegion() const { return { this->address, this->size }; }

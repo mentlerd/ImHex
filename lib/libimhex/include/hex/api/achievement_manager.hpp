@@ -304,6 +304,10 @@ namespace hex {
             std::vector<AchievementNode*> visibilityParents;
             ImVec2 position;
 
+            explicit AchievementNode(decltype(achievement) achievement)
+            : achievement(std::move(achievement))
+            {}
+            
             [[nodiscard]] bool hasParents() const {
                 return !this->parents.empty();
             }

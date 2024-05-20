@@ -448,7 +448,7 @@ namespace hex::plugin::builtin {
         for (u64 address = searchRegion.getStartAddress(); address < searchRegion.getEndAddress(); address += advance) {
             task.update(address);
 
-            auto result = std::visit([&]<typename T>(T) {
+            auto result = std::visit([&, min = min, max = max]<typename T>(T) {
                 using DecayedType = std::remove_cvref_t<std::decay_t<T>>;
 
                 auto minValue = std::get<DecayedType>(min);

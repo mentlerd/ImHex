@@ -1161,7 +1161,7 @@ namespace hex::plugin::builtin {
                     ImGui::SameLine();
 
                     if (ImGuiExt::DimmedIconButton(ICON_VS_SAVE_AS, ImGui::GetStyleColorVec4(ImGuiCol_Text))) {
-                        fs::openFileBrowser(fs::DialogMode::Save, {}, [id, &runtime](const auto &path) {
+                        fs::openFileBrowser(fs::DialogMode::Save, {}, [id = id, &runtime](const auto &path) {
                             wolv::io::File file(path, wolv::io::File::Mode::Create);
                             if (!file.isValid()) {
                                 ui::ToastError::open("hex.builtin.popup.error.create"_lang);

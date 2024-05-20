@@ -38,6 +38,11 @@ namespace hex::plugin::builtin::recent {
             struct BackupEntry {
                 std::string displayName;
                 std::fs::path path;
+                
+                BackupEntry(decltype(displayName) displayName, decltype(path) path)
+                : displayName(std::move(displayName))
+                , path(std::move(path))
+                {}
             };
         public:
             PopupAutoBackups() : Popup("hex.builtin.welcome.start.recent.auto_backups", true, true) {

@@ -67,6 +67,12 @@ namespace hex::plugin::builtin {
             std::fs::path path;
             std::vector<u8> data;
             Region region;
+            
+            VirtualFile(decltype(path) path, decltype(data) data, decltype(region) region)
+            : path(std::move(path))
+            , data(std::move(data))
+            , region(std::move(region))
+            {}
         };
 
         enum class DangerousFunctionPerms : u8 {
@@ -164,6 +170,13 @@ namespace hex::plugin::builtin {
             pl::core::Token::Literal value;
             EnvVarType type;
 
+            EnvVar(decltype(id) id, decltype(name) name, decltype(value) value, decltype(type) type)
+            : id(std::move(id))
+            , name(std::move(name))
+            , value(std::move(value))
+            , type(std::move(type))
+            {}
+            
             bool operator==(const EnvVar &other) const {
                 return this->id == other.id;
             }

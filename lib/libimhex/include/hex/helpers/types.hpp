@@ -25,6 +25,16 @@ namespace hex {
         u64 address;
         u64 size;
 
+        constexpr Region()
+        : address(0)
+        , size(0)
+        {}
+        
+        constexpr Region(u64 address, u64 size)
+        : address(address)
+        , size(size)
+        {}
+        
         [[nodiscard]] constexpr bool isWithin(const Region &other) const {
             if (*this == Invalid() || other == Invalid())
                 return false;

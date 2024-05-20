@@ -28,6 +28,12 @@ namespace hex::log {
             std::string project;
             std::string level;
             std::string message;
+            
+            LogEntry(decltype(project) project, decltype(level) level, decltype(message) message)
+            : project(std::move(project))
+            , level(std::move(level))
+            , message(std::move(message))
+            {}
         };
 
         std::vector<LogEntry>& getLogEntries();

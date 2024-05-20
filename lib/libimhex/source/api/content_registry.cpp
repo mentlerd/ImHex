@@ -33,6 +33,11 @@ namespace hex {
             struct OnChange {
                 u32 id;
                 OnChangeCallback callback;
+                
+                OnChange(decltype(id) id, decltype(callback) callback)
+                : id(std::move(id))
+                , callback(std::move(callback))
+                {}
             };
 
             static AutoReset<std::map<std::string, std::map<std::string, std::vector<OnChange>>>> s_onChangeCallbacks;

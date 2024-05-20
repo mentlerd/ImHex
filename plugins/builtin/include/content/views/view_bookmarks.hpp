@@ -26,6 +26,11 @@ namespace hex::plugin::builtin {
         struct Bookmark {
             ImHexApi::Bookmarks::Entry entry;
             TextEditor editor;
+            
+            Bookmark(decltype(entry) entry, decltype(editor) editor)
+            : entry(std::move(entry))
+            , editor(std::move(editor))
+            {}
         };
 
         PerProvider<std::list<Bookmark>> m_bookmarks;

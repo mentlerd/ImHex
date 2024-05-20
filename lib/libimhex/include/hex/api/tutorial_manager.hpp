@@ -80,6 +80,11 @@ namespace hex {
                 struct Highlight {
                     UnlocalizedString unlocalizedText;
                     std::vector<std::variant<Lang, std::string, int>> highlightIds;
+                    
+                    Highlight(decltype(unlocalizedText) unlocalizedText, decltype(highlightIds) highlightIds)
+                    : unlocalizedText(std::move(unlocalizedText))
+                    , highlightIds(std::move(highlightIds))
+                    {}
                 };
 
                 struct Message {
